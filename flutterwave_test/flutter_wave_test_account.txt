@@ -1,0 +1,15 @@
+Access Bank
+Account number: 0690000031
+OTP: 12345
+
+Access Bank 2
+Account number: 0690000032
+OTP: 12345
+
+Access Bank 3
+Account number: 0690000033
+OTP: 12345
+
+Access Bank 4
+Account number: 0690000034
+OTP: 12345

@@ -1,0 +1,160 @@
+ # Gunicorn SOcket
+sudo nano /etc/systemd/system/gunicorn.socket
+
+[Unit]
+Description=gunicorn socket
+
+[Socket]
+ListenStream=/run/gunicorn.sock
+
+[Install]
+WantedBy=sockets.target
+
+
+
+
+
+
+# Gunicorn.service Configuration
+sudo nano /etc/systemd/system/gunicorn.service
+
+
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/home/myproj/Resolute-40-Backend
+ExecStart=/home/myproj/Resolute-40-Backend/venv/bin/gunicorn  \
+          --access-logfile - \
+          --workers 3 \
+          --bind unix:/run/gunicorn.sock \
+          Resolute-40-Backend.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl start gunicorn.socket
+sudo systemctl enable gunicorn.socket
+file /run/gunicorn.sock
+curl --unix-socket /run/gunicorn.sock localhost
+sudo systemctl daemon-reload
+sudo systemctl restart gunicorn
+
+
+
+
+# Celery Configuration systemd configuration in
+sudo nano /etc/systemd/system/celery.service
+
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/home/myproj/Resolute-40-Backend
+ExecStart=/home/myproj/Resolute-40-Backend/venv/bin/celery -A Resolute-40-Backend worker  --loglevel=info
+
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl start celery
+sudo systemctl enable celery
+sudo systemctl status celery
+
+# Celery beat
+sudo nano /etc/systemd/system/celerybeat.service
+
+[Unit]
+Description=Celery Beat Service
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/home/myproj/Resolute-40-Backend
+ExecStart=/home/myproj/Resolute-40-Backend/venv/bin/celery -A Resolute-40-Backend beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl start celerybeat
+sudo systemctl enable celerybeat
+sudo systemctl status celerybeat
+
+
+
+Daphne Service
+[Unit]
+Description=Daphne Service
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/home/myproj/Resolute-40-Backend
+ExecStart=/home/myproj/Resolute-40-Backend/venv/bin/daphne -b 0.0.0.0 -p 8001 Resolute-40-Backend.asgi:application
+Environment=DAPHNE_LOG_LEVEL=info
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl start daphne
+sudo systemctl enable daphne
+sudo systemctl status daphne
+
+
+
+
+# Nginx Configuration
+sudo nano /etc/nginx/sites-available//Resolute-40-Backend
+
+server {
+    server_name  api.estateiq.ng;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /home/myproj/Resolute-40-Backend;
+    }
+    location /media/ {
+        root /home/myproj/Resolute-40-Backend;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://0.0.0.0:8001;
+
+    }
+
+    # Proxy requests to Daphne (via a separate location block)
+    location /ws/ {
+        proxy_pass http://0.0.0.0:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
+
+}
+
+
+
+
+
+sudo ln -s /etc/nginx/sites-available/Resolute-40-Backend /etc/nginx/sites-enabled
+sudo nginx -t
+sudo systemctl restart nginx

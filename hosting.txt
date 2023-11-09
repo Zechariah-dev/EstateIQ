@@ -1,0 +1,152 @@
+
+# Gunicorn.service Configuration
+
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=estateiq
+Group=www-data
+WorkingDirectory=/home/estateiq/EstateIQAPI
+ExecStart=/home/estateiq/EstateIQAPI/venv/bin/gunicorn--access-logfile ---workers 3--bind unix:/run/gunicorn.sockEstateIQAPI.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
+
+
+# Nginx Configuration
+server {
+    listen 80;
+    server_name 24.199.114.239 api.estateiq.ng;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /home/estateiq/EstateIQAPI;
+    }
+    location /media/ {
+        root /home/estateiq/EstateIQAPI;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/run/gunicorn.sock;
+    }
+}
+
+sudo ln -s /etc/nginx/sites-available/EstateIQAPI /etc/nginx/sites-enabled
+
+
+Celery Configuration systemd confuration in
+sudo nano /etc/systemd/system/celery.service
+
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+User=estateiq
+Group=www-data
+WorkingDirectory=/home/estateiq/EstateIQAPI
+ExecStart=/home/estateiq/EstateIQAPI/venv/bin/celery -A EstateIQAPI worker  --loglevel=info
+
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl start celery
+sudo systemctl enable celery
+sudo systemctl status celery
+
+Celery beat
+sudo nano /etc/systemd/system/celerybeat.service
+
+[Unit]
+Description=Celery Beat Service
+After=network.target
+
+[Service]
+User=estateiq
+Group=www-data
+WorkingDirectory=/home/estateiq/EstateIQAPI
+ExecStart=/home/estateiq/EstateIQAPI/venv/bin/celery -A EstateIQAPI beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl start celerybeat
+sudo systemctl enable celerybeat
+sudo systemctl status celerybeat
+
+
+
+Daphne Service
+[Unit]
+Description=Daphne Service
+After=network.target
+
+[Service]
+User=estateiq
+Group=www-data
+WorkingDirectory=/home/estateiq/EstateIQAPI
+ExecStart=/home/estateiq/EstateIQAPI/venv/bin/daphne -b 0.0.0.0 -p 8001 EstateIQAPI.asgi:application
+Environment=DAPHNE_LOG_LEVEL=info
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl start daphne
+sudo systemctl enable daphne
+sudo systemctl status daphne
+
+
+
+
+# Nginx COnfiguration
+server {
+    server_name  api.estateiq.ng;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /home/estateiq/EstateIQAPI;
+    }
+    location /media/ {
+        root /home/estateiq/EstateIQAPI;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/run/gunicorn.sock;
+
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/api.estateiq.ng/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/api.estateiq.ng/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = api.estateiq.ng) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name 24.199.114.239 api.estateiq.ng;
+    return 404; # managed by Certbot
+
+
+}
+
+
+
+
+
+

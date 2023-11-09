@@ -1,0 +1,40 @@
+<form>
+    <script src="https://checkout.flutterwave.com/v3.js"></script>
+    <button type="button" onClick="makePayment()">Pay Now</button>
+</form>
+
+<script>
+    function makePayment() {
+        FlutterwaveCheckout({
+            public_key: "FLWPUBK_TEST-772e2dac50f99608383fadb33dc8912e-X",
+            tx_ref: "EstateIQ-utility-16747645262",
+            amount: 1000,
+            currency: "NGN",
+            country: "NG",
+            payment_options: " ",
+            redirect_url: // specified redirect URL
+                "https://4d15-154-73-10-77.ngrok.io",
+            callback_url: 'https://4d15-154-73-10-77.ngrok.io/api/v1/estate_utilties/utility/flutterwave_callback/',
+            meta: {
+                consumer_id: 23,
+                consumer_mac: "92a3-912ba-1192a",
+            },
+            customer: {
+                email: "codertjay@gmail.com",
+                phone_number: "08061715291",
+                name: "Afenikhena Favour",
+            },
+            callback: function (data) {
+                console.log(data);
+            },
+            onclose: function () {
+                // close modal
+            },
+            customizations: {
+                title: "My store",
+                description: "Payment for items in cart",
+                logo: "https://assets.piedpiper.com/logo.png",
+            },
+        });
+    }
+</script>

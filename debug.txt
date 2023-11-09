@@ -1,0 +1,31 @@
+server {
+    server_name  api.estateiq.ng;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /home/estateiq/EstateIQAPI;
+    }
+    location /media/ {
+        root /home/estateiq/EstateIQAPI;
+    }
+
+    location / {
+        include proxy_params;
+            proxy_pass http://0.0.0.0:8001;
+
+    }
+
+    # Proxy requests to Daphne (via a separate location block)
+    location /ws/ {
+        proxy_pass http://0.0.0.0:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
+
+}

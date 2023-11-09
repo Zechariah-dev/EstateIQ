@@ -1,0 +1,33 @@
+<form>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <button type="button" onclick="payWithPaystack()">Pay</button>
+</form>
+
+<script>
+    function payWithPaystack() {
+        var handler = PaystackPop.setup({
+            key: 'pk_live_52c351e9226e7f70fd7913da05159b87bea83522',
+            email: 'dev.codertjay@gmail.com',
+            amount: 10000,
+            currency: "NGN",
+            ref: "EstateIQ-plan-16738095455", // generates a reference
+            metadata: {
+                custom_fields: [
+                    {
+                        display_name: "Mobile Number",
+                        variable_name: "mobile_number",
+                        value: "+2348012345678"
+                    }
+                ]
+            },
+            callback: function (response) {
+                console.log(response)
+                alert('success. transaction ref is ' + response.reference);
+            },
+            onClose: function () {
+                alert('window closed');
+            }
+        });
+        handler.openIframe();
+    }
+</script>

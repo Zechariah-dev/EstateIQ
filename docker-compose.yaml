@@ -1,0 +1,64 @@
+version: "3.9"
+services:
+  estateiq_api:
+    #  it depends on the postgres and redis
+    depends_on:
+      - redis_db
+    build:
+      # location of the project in our folder
+      context: .
+      dockerfile: Dockerfile
+    #  the name of the image
+    image: estateiq_api
+    # my env file
+    environment:
+      - PORT=8000
+    volumes:
+      - staticfiles:/staticfiles
+    env_file:
+      - .env
+    expose:
+      - 8001
+    ports:
+      - "8001:8000"
+    command: sh -c "sh /app/migrate.sh && sh /app/runserver.sh"
+
+
+  redis_db:
+    image: redis
+    restart: always
+    expose:
+      - 6380
+    ports:
+      - "6380:6380"
+    volumes:
+      - redis_data:/data
+    entrypoint: redis-server --appendonly yes --port 6380
+
+  celery:
+    env_file:
+      - .env
+    build:
+      context: .
+    depends_on:
+      - redis_db
+      - postgres_db
+      - estateiq_api
+    command: sh -c "chmod +x  /app/celery_command.sh && sh /app/celery_command.sh"
+
+  celery_schedule:
+    env_file:
+      - .env
+    build:
+      context: .
+    depends_on:
+      - redis_db
+      - estateiq_api
+    command: sh -c "chmod +x  /app/celery_schedule_command.sh && sh /app/celery_schedule_command.sh"
+
+
+volumes:
+  redis_data:
+  staticfiles:
+
+

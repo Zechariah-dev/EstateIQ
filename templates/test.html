@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Share Example</title>
+</head>
+<body>
+    <p>Check out this amazing website:</p>
+    <button onclick="shareContent()">Share</button>
+
+    <script>
+        function shareContent() {
+            // Check if the Web Share API is available
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Check out this amazing website!',
+                    text: 'I found this awesome website that you might like.',
+                    url: 'https://www.example.com'
+                })
+                .then(() => console.log('Share successful'))
+                .catch((error) => console.error('Error sharing:', error));
+            } else {
+                // Fallback for browsers that don't support the Web Share API
+                alert('Sorry, your browser does not support sharing.');
+            }
+        }
+    </script>
+</body>
+</html>
